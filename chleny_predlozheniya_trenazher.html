@@ -95,26 +95,8 @@
   </div>
 </div>
 
-<script>
-  // выбираем набор через URL: ?set=podlezhashchee
-  const params = new URLSearchParams(location.search);
-  const setName = params.get('set') || 'podlezhashchee';
-
-  // карта наборов -> путь к файлу
-  const SETS = {
-    podlezhashchee: '../js/sets/tasks_podlezhashchee.js',
-    // skazuemoe: '../js/sets/tasks_skazuemoe.js',
-    // dopolnenie: '../js/sets/tasks_dopolnenie.js',
-  };
-
-  const script = document.createElement('script');
-  script.src = SETS[setName] || SETS.podlezhashchee;
-  script.onload = () => {
-    const app = document.createElement('script');
-    app.src = '../js/app_chleny_predlozheniya.js';
-    document.body.appendChild(app);
-  };
-  document.body.appendChild(script);
-</script>
+<script src="js/sets/tasks_podlezhashchee.js"></script>
+<script src="js/app_chleny_predlozheniya.js"></script>
 </body>
 </html>
+
