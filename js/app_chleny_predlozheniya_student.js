@@ -142,7 +142,7 @@
   els.btnNext.addEventListener('click', () => { if(idx<TASKS.length-1){ idx++; renderTask(); }});
   els.btnRandom.addEventListener('click', () => { idx = Math.floor(Math.random()*TASKS.length); renderTask(); });
 
-  els.btnClearHL.addEventListener('click', clearHighlights);
+  // els.btnClearHL.addEventListener('click', clearHighlights);
   els.btnReset.addEventListener('click', resetChoice);
 
   els.btnCheck.addEventListener('click', () => {
