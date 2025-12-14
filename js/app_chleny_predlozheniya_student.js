@@ -15,6 +15,18 @@
     btnClearHL: document.getElementById('btnClearHL'),
     btnCheck: document.getElementById('btnCheck'),
     btnReset: document.getElementById('btnReset'),
+    function resetChoice(){
+  // снять все галочки
+  document.querySelectorAll('#options input[type="checkbox"]').forEach(ch => ch.checked = false);
+
+  // скрыть результат (если есть)
+  const r = document.getElementById('result');
+  if (r) r.style.display = 'none';
+}
+
+if (els.btnReset) {
+  els.btnReset.addEventListener('click', resetChoice);
+}
     btnExport: document.getElementById('btnExport'),
   };
 
