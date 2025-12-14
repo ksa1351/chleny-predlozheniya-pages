@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Члены предложения — тренажёр</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#121a33; --text:#e9ecff; --muted:#b8c0ff;
+      --btn:#2b3a7a; --btn2:#1f2a57; --hl:#ffeb3b;
+      --radius:16px; --ok:#35d07f; --bad:#ff5b6e;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#070a14,#0b1020 30%,#070a14);color:var(--text)}
+    header{padding:18px 14px;position:sticky;top:0;z-index:5;background:rgba(11,16,32,.9);backdrop-filter: blur(8px);border-bottom:1px solid rgba(255,255,255,.08)}
+    .wrap{max-width:980px;margin:0 auto;padding:0 14px 24px}
+    h1{font-size:18px;margin:0 0 6px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.35}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:14px}
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+    .card{background:rgba(18,26,51,.88);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button{border:1px solid rgba(255,255,255,.12);background:var(--btn);color:var(--text);padding:10px 12px;border-radius:12px;cursor:pointer;transition:.15s transform,.15s opacity,.15s background;font-weight:600}
+    button:hover{transform:translateY(-1px)}
+    button.secondary{background:var(--btn2)}
+    button.ghost{background:transparent}
+    button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .tag{display:inline-flex;gap:8px;align-items:center;padding:8px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);color:var(--muted);font-size:13px}
+    .passageTitle{font-weight:800;margin:0 0 10px}
+    .textBox{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;line-height:1.55;font-size:16px}
+    .sent{margin:0 0 8px}
+    .sent small{color:var(--muted);font-weight:700}
+    .w{display:inline-block;padding:0 2px;border-radius:6px;cursor:pointer;user-select:none;-webkit-tap-highlight-color: transparent}
+    .w:hover{outline:1px dashed rgba(255,255,255,.18)}
+    .w.hl{background:var(--hl);color:#111;outline:1px solid rgba(0,0,0,.25)}
+    .opts{margin-top:12px}
+    .opt{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.15);margin-bottom:10px}
+    .opt input{margin-top:3px;transform:scale(1.15)}
+    .opt b{min-width:24px;display:inline-block}
+    .help{color:var(--muted);font-size:13px;line-height:1.35}
+    .result{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18);font-weight:700;display:none}
+    .ok{color:var(--ok)} .bad{color:var(--bad)}
+    .switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.12)}
+    .switch input{transform:scale(1.2)}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Члены предложения — тренажёр</h1>
+    <div class="sub">Клик по слову = выделение/снятие выделения. Набор заданий выбирается параметром <b>?set=...</b></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <section class="card">
+      <div class="row" style="justify-content:space-between">
+        <div class="tag"><span>Задание:</span> <span id="taskNum">1</span>/<span id="taskTotal">1</span></div>
+        <div class="row">
+          <button class="secondary" id="btnPrev">←</button>
+          <button class="secondary" id="btnNext">→</button>
+          <button id="btnRandom">Случайное</button>
+        </div>
+      </div>
+
+      <h2 class="passageTitle" id="title" style="margin-top:12px;">Прочитайте текст.</h2>
+      <div class="textBox" id="textBox"></div>
+
+      <div class="row" style="margin-top:12px">
+        <button class="ghost" id="btnClearHL">Сбросить выделение</button>
+        <span class="help">Выделение — маркер для ученика. Проверка — по выбранным пунктам.</span>
+      </div>
+    </section>
+
+    <aside class="card">
+      <div class="help" style="margin-bottom:10px">Отметьте номера верных ответов:</div>
+      <div id="options" class="opts"></div>
+
+      <div class="row" style="margin-top:10px">
+        <button id="btnCheck">Проверить</button>
+        <button class="secondary" id="btnReset">Сбросить выбор</button>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <label class="switch">
+          <input type="checkbox" id="toggleShowAnswer" />
+          <span>Показать ответ</span>
+        </label>
+      </div>
+
+      <div id="result" class="result"></div>
+      <div id="answerBox" class="result" style="margin-top:10px"></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+  // выбираем набор через URL: ?set=podlezhashchee
+  const params = new URLSearchParams(location.search);
+  const setName = params.get('set') || 'podlezhashchee';
+
+  // карта наборов -> путь к файлу
+  const SETS = {
+    podlezhashchee: '../js/sets/tasks_podlezhashchee.js',
+    // skazuemoe: '../js/sets/tasks_skazuemoe.js',
+    // dopolnenie: '../js/sets/tasks_dopolnenie.js',
+  };
+
+  const script = document.createElement('script');
+  script.src = SETS[setName] || SETS.podlezhashchee;
+  script.onload = () => {
+    const app = document.createElement('script');
+    app.src = '../js/app_chleny_predlozheniya.js';
+    document.body.appendChild(app);
+  };
+  document.body.appendChild(script);
+</script>
+</body>
+</html>
