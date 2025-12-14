@@ -9,62 +9,107 @@
     textBox: document.getElementById('textBox'),
     options: document.getElementById('options'),
     result: document.getElementById('result'),
+
     btnPrev: document.getElementById('btnPrev'),
     btnNext: document.getElementById('btnNext'),
     btnRandom: document.getElementById('btnRandom'),
-    btnClearHL: document.getElementById('btnClearHL'),
+
     btnCheck: document.getElementById('btnCheck'),
     btnReset: document.getElementById('btnReset'),
-    function resetChoice(){
-  // снять все галочки
-  document.querySelectorAll('#options input[type="checkbox"]').forEach(ch => ch.checked = false);
-
-  // скрыть результат (если есть)
-  const r = document.getElementById('result');
-  if (r) r.style.display = 'none';
-}
-
-if (els.btnReset) {
-  els.btnReset.addEventListener('click', resetChoice);
-}
     btnExport: document.getElementById('btnExport'),
+
+    studentName: document.getElementById('studentName'),
   };
 
   let idx = 0;
 
-  // Ответы ученика: по номеру задания -> строка типа "135"
   const student = {
     set: "podlezhashchee",
+    studentName: "",
     createdAt: new Date().toISOString(),
     answers: {} // { "1":"135", "2":"13", ... }
   };
 
+  // -------------------------------
+  // ✅ AUTOSAVE / AUTORESTORE
+  // -------------------------------
+  const STORAGE_KEY = `chleny_answers_${student.set}`;
+
+  function saveToStorage() {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          set: student.set,
+          studentName: student.studentName,
+          createdAt: student.createdAt,
+          savedAt: new Date().toISOString(),
+          answers: student.answers,
+          idx: idx
+        })
+      );
+    } catch (e) {
+      // localStorage может быть недоступен (редко) — просто пропускаем
+    }
+  }
+
+  function loadFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+
+      const data = JSON.parse(raw);
+      if (!data || data.set !== student.set) return false;
+
+      student.studentName = (data.studentName || "").trim();
+      student.answers =
+        (data.answers && typeof data.answers === "object") ? data.answers : {};
+      if (data.createdAt) student.createdAt = data.createdAt;
+
+      if (Number.isInteger(data.idx) && data.idx >= 0 && data.idx < TASKS.length) {
+        idx = data.idx;
+      }
+
+      if (els.studentName) els.studentName.value = student.studentName;
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // автосохранение при закрытии/обновлении
+  window.addEventListener("beforeunload", saveToStorage);
+
+  // -------------------------------
+  // UI rendering
+  // -------------------------------
   els.taskTotal.textContent = String(TASKS.length || 0);
 
-  function renderText(sentences){
-    const container = document.createElement('div');
+  function renderText(sentences) {
+    const container = document.createElement("div");
     sentences.forEach((s, i) => {
-      const p = document.createElement('p');
-      p.className = 'sent';
+      const p = document.createElement("p");
+      p.className = "sent";
 
-      const num = document.createElement('small');
-      num.textContent = `(${i+1}) `;
+      const num = document.createElement("small");
+      num.textContent = `(${i + 1}) `;
       p.appendChild(num);
 
       const tokens = s.match(/[\p{L}\p{N}ЁёА-Яа-я\-]+|[^\s]/gu) || [];
-      tokens.forEach(t => {
+      tokens.forEach((t) => {
         if (/[\p{L}\p{N}ЁёА-Яа-я\-]+/u.test(t)) {
-          const w = document.createElement('span');
-          w.className = 'w';
+          const w = document.createElement("span");
+          w.className = "w";
           w.textContent = t;
-          w.addEventListener('click', () => w.classList.toggle('hl'));
+          w.addEventListener("click", () => w.classList.toggle("hl"));
           p.appendChild(w);
         } else {
-          const span = document.createElement('span');
+          const span = document.createElement("span");
           span.textContent = t;
           p.appendChild(span);
         }
-        p.appendChild(document.createTextNode(' '));
+        p.appendChild(document.createTextNode(" "));
       });
 
       container.appendChild(p);
@@ -72,55 +117,60 @@ if (els.btnReset) {
     return container.innerHTML;
   }
 
-  function renderOptions(options){
-    els.options.innerHTML = '';
+  function renderOptions(options) {
+    els.options.innerHTML = "";
     options.forEach((txt, i) => {
-      const div = document.createElement('label');
-      div.className = 'opt';
+      const div = document.createElement("label");
+      div.className = "opt";
       div.innerHTML = `
-        <input type="checkbox" data-n="${i+1}">
-        <div><b>${i+1}.</b> <span>${txt}</span></div>
+        <input type="checkbox" data-n="${i + 1}">
+        <div><b>${i + 1}.</b> <span>${txt}</span></div>
       `;
       els.options.appendChild(div);
     });
   }
 
-  function getUserAnswer(){
+  function getUserAnswer() {
     return [...els.options.querySelectorAll('input[type="checkbox"]:checked')]
-      .map(x => x.getAttribute('data-n'))
+      .map((x) => x.getAttribute("data-n"))
       .sort()
-      .join('');
+      .join("");
   }
 
-  function setUserAnswerForTask(taskIndex1based, ans){
-    student.answers[String(taskIndex1based)] = ans;
-    updateExportButton();
-  }
-
-  function restoreUserAnswerForTask(taskIndex1based){
+  function restoreUserAnswerForTask(taskIndex1based) {
     const saved = student.answers[String(taskIndex1based)];
-    els.options.querySelectorAll('input[type="checkbox"]').forEach(ch => {
-      ch.checked = saved ? saved.includes(ch.getAttribute('data-n')) : false;
+    els.options.querySelectorAll('input[type="checkbox"]').forEach((ch) => {
+      ch.checked = saved ? saved.includes(ch.getAttribute("data-n")) : false;
     });
   }
 
-  function clearHighlights(){
-    els.textBox.querySelectorAll('.w.hl').forEach(w => w.classList.remove('hl'));
+  function setUserAnswerForTask(taskIndex1based, ans) {
+    student.answers[String(taskIndex1based)] = ans;
+    updateExportButton();
+    saveToStorage();
   }
 
-  function resetChoice(){
-    els.options.querySelectorAll('input[type="checkbox"]').forEach(ch => ch.checked = false);
-    if (els.result) { els.result.style.display = 'none'; }
+  function resetChoice() {
+    els.options.querySelectorAll('input[type="checkbox"]').forEach((ch) => (ch.checked = false));
+    if (els.result) els.result.style.display = "none";
+
+    // удаляем ответ по текущему заданию, если очистили выбор
+    delete student.answers[String(idx + 1)];
+    updateExportButton();
+    saveToStorage();
   }
 
-  function updateExportButton(){
-    // включаем выгрузку, если ученик ответил на ВСЕ задания
+  function updateExportButton() {
     const total = TASKS.length;
     const answered = Object.keys(student.answers).length;
-    if (els.btnExport) els.btnExport.disabled = !(total > 0 && answered === total);
+    const hasName = (student.studentName || "").trim().length >= 3;
+
+    if (els.btnExport) {
+      els.btnExport.disabled = !(total > 0 && answered === total && hasName);
+    }
   }
 
-  function renderTask(){
+  function renderTask() {
     if (!TASKS.length) return;
 
     const t = TASKS[idx];
@@ -130,18 +180,20 @@ if (els.btnReset) {
     els.textBox.innerHTML = renderText(t.sentences);
     renderOptions(t.options);
 
-    if (els.result) els.result.style.display = 'none';
+    if (els.result) els.result.style.display = "none";
 
-    els.btnPrev.disabled = (idx === 0);
-    els.btnNext.disabled = (idx === TASKS.length - 1);
+    els.btnPrev.disabled = idx === 0;
+    els.btnNext.disabled = idx === TASKS.length - 1;
 
     restoreUserAnswerForTask(idx + 1);
     updateExportButton();
   }
 
-  function downloadJSON(filename, obj){
-    const blob = new Blob([JSON.stringify(obj, null, 2)], {type: 'application/json;charset=utf-8'});
-    const a = document.createElement('a');
+  function downloadJSON(filename, obj) {
+    const blob = new Blob([JSON.stringify(obj, null, 2)], {
+      type: "application/json;charset=utf-8",
+    });
+    const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = filename;
     document.body.appendChild(a);
@@ -150,34 +202,91 @@ if (els.btnReset) {
     URL.revokeObjectURL(a.href);
   }
 
-  els.btnPrev.addEventListener('click', () => { if(idx>0){ idx--; renderTask(); }});
-  els.btnNext.addEventListener('click', () => { if(idx<TASKS.length-1){ idx++; renderTask(); }});
-  els.btnRandom.addEventListener('click', () => { idx = Math.floor(Math.random()*TASKS.length); renderTask(); });
+  // -------------------------------
+  // Events
+  // -------------------------------
+  if (els.studentName) {
+    els.studentName.addEventListener("input", () => {
+      student.studentName = els.studentName.value.trim();
+      updateExportButton();
+      saveToStorage();
+    });
+  }
 
-  // els.btnClearHL.addEventListener('click', clearHighlights);
-  els.btnReset.addEventListener('click', resetChoice);
-
-  els.btnCheck.addEventListener('click', () => {
+  // ✅ Автосохранение при изменении выбора (галочки)
+  // Сохраняем "черновик" ответа на текущее задание сразу
+  els.options?.addEventListener("change", () => {
     const ans = getUserAnswer();
-    if (!ans){
-      if (els.result){
-        els.result.style.display = 'block';
-        els.result.textContent = 'Выберите хотя бы один вариант.';
+    if (ans) {
+      student.answers[String(idx + 1)] = ans;
+    } else {
+      delete student.answers[String(idx + 1)];
+    }
+    updateExportButton();
+    saveToStorage();
+  });
+
+  // Навигация + автосохранение позиции
+  els.btnPrev?.addEventListener("click", () => {
+    if (idx > 0) {
+      idx--;
+      saveToStorage();
+      renderTask();
+    }
+  });
+
+  els.btnNext?.addEventListener("click", () => {
+    if (idx < TASKS.length - 1) {
+      idx++;
+      saveToStorage();
+      renderTask();
+    }
+  });
+
+  els.btnRandom?.addEventListener("click", () => {
+    idx = Math.floor(Math.random() * TASKS.length);
+    saveToStorage();
+    renderTask();
+  });
+
+  els.btnReset?.addEventListener("click", resetChoice);
+
+  // Кнопка "Сохранить ответ" — оставляем (она покажет сообщение ученику)
+  els.btnCheck?.addEventListener("click", () => {
+    const ans = getUserAnswer();
+    if (!ans) {
+      if (els.result) {
+        els.result.style.display = "block";
+        els.result.textContent = "Выберите хотя бы один вариант.";
       }
       return;
     }
+
     setUserAnswerForTask(idx + 1, ans);
-    if (els.result){
-      els.result.style.display = 'block';
+
+    if (els.result) {
+      els.result.style.display = "block";
       els.result.textContent = `Ответ сохранён: ${ans}`;
     }
   });
 
-  els.btnExport.addEventListener('click', () => {
-    // Можно добавить поле “ФИО” — скажете, сделаю
-    const filename = `answers_${student.set}_${new Date().toISOString().slice(0,10)}.json`;
+  els.btnExport?.addEventListener("click", () => {
+    const nameSafe = (student.studentName || "Без_ФИО")
+      .trim()
+      .replace(/\s+/g, "_")
+      .replace(/[^\p{L}\p{N}_-]+/gu, "");
+
+    const date = new Date().toISOString().slice(0, 10);
+    const filename = `answers_${student.set}_${nameSafe}_${date}.json`;
+
+    saveToStorage();
     downloadJSON(filename, student);
   });
 
+  // -------------------------------
+  // Init: restore + render
+  // -------------------------------
+  loadFromStorage();
   renderTask();
+  updateExportButton();
 })();
